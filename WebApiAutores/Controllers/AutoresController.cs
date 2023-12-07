@@ -9,17 +9,32 @@ namespace WebApiAutores.Controllers
     public class AutoresController : ControllerBase
     {
         private readonly ApplicationDbContext context;
+        private readonly ILogger<AutoresController> logger;
 
-        public AutoresController(ApplicationDbContext context)
+        public AutoresController(ApplicationDbContext context, ILogger<AutoresController> logger)
         {
             this.context = context;
+            this.logger = logger;
         }
 
         [HttpGet]
         public async Task<ActionResult<List<Autor>>> Get()
         {
+            
             return await context.Autores.ToListAsync();
         }
+
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<Autor>> Get(int id)
+        {
+            var autor = await context.Autores.FirstOrDefaultAsync(x => x.Id == id);
+            if(autor == null)
+            {
+                return NotFound();
+            }
+            return autor;
+        }
+
 
         [HttpPost]
         public async Task<ActionResult> Post(Autor autor)
