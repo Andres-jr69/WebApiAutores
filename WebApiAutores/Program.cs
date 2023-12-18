@@ -1,7 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
 using WebApiAutores;
-using System.Text.Json; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +15,8 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("defaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
 
+
+builder.Services.AddAutoMapper(typeof(Program));
 
 var app = builder.Build();
 

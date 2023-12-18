@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WebApiAutores.DTOs;
 using WebApiAutores.Entidades;
 
 namespace WebApiAutores.Controllers
@@ -9,56 +11,87 @@ namespace WebApiAutores.Controllers
     public class AutoresController : ControllerBase
     {
         private readonly ApplicationDbContext context;
-        private readonly ILogger<AutoresController> logger;
+        private readonly IMapper mapper;
 
-        public AutoresController(ApplicationDbContext context, ILogger<AutoresController> logger)
+        public AutoresController(ApplicationDbContext context, IMapper mapper)
         {
             this.context = context;
-            this.logger = logger;
+            this.mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<Autor>>> Get()
+        public async Task<ActionResult<List<AutorDTO>>> Get()
         {
-            
-            return await context.Autores.ToListAsync();
+            /*Este context.Autores me permite indicar que yo quiero realizar un query sobre la tabla autores*/
+            /*ToListAsync = Listado o varios de mi lista de autores */
+            var autores = await context.Autores.ToListAsync();
+            return mapper.Map<List<AutorDTO>>(autores);
         }
 
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Autor>> Get(int id)
+        [HttpGet("{id:int}", Name = "obtenerAutor" )]
+        public async Task<ActionResult<AutorDTOConLibros>> Get(int id)
         {
-            var autor = await context.Autores.FirstOrDefaultAsync(x => x.Id == id);
+            /*FirstOrDefaultAsync = si lo que queremos es traer un solo registro*/
+            var autor = await context.Autores
+                .Include(autorDB => autorDB.AutoresLibros)
+                .ThenInclude(autorLibroDB => autorLibroDB.Libro)
+                .FirstOrDefaultAsync(x => x.Id == id);
             if(autor == null)
             {
                 return NotFound();
             }
-            return autor;
+            return mapper.Map<AutorDTOConLibros>(autor);
+            
+        }
+
+        [HttpGet("{nombre}")]
+        public async Task<ActionResult<List<AutorDTO>>> Get([FromRoute] string nombre)
+        {
+            /*Aqui me dara una lista si hay varios autores con el mismo nombre*/
+            var autores = await context.Autores.Where(x => x.Nombre.Contains(nombre)).ToListAsync();
+
+            return mapper.Map<List<AutorDTO>>(autores);
+            
+            
         }
 
 
         [HttpPost]
-        public async Task<ActionResult> Post(Autor autor)
+        public async Task<ActionResult> Post(AutorCreacionDTO autorCreacionDTO)
         {
+            var existeAutorConMiNombre = await context.Autores.AnyAsync(x => x.Nombre == autorCreacionDTO.Nombre);
+
+            if (existeAutorConMiNombre)
+            {
+                return BadRequest($"ya existe un autor con el nombre {autorCreacionDTO.Nombre}");
+            }
+
+            var autor = mapper.Map<Autor>(autorCreacionDTO);
+
             context.Add(autor);
             await context.SaveChangesAsync();
-            return Ok();
+
+            var autorDTO = mapper.Map<AutorDTO>(autor);
+
+            return CreatedAtRoute("obtenerAutor", new {id = autor.Id}, autorDTO);
         }
+
         [HttpPut("{id:int}")] // api/autores/1
-        public async Task<ActionResult> Put(Autor autor, int id)
+        public async Task<ActionResult> Put(AutorCreacionDTO autorCreacionDTO, int id)
         {
-            if (autor.Id != id )
-            {
-                return BadRequest("El id del autor no coincide con el id de la URL");
-            }
+            
             var existe = await context.Autores.AnyAsync(x => x.Id == id);
             if (!existe)
             {
                 return NotFound();
             }
 
+            var autor = mapper.Map<Autor>(autorCreacionDTO);
+            autor.Id = id;
+
             context.Update(autor);
             await context.SaveChangesAsync();
-            return Ok();
+            return NoContent();
 
 
         }
