@@ -24,13 +24,14 @@ namespace WebApiAutores.Controllers
             this.configuration = configuration;
         }
 
-        [HttpGet("Configuraciones")]
-        public ActionResult<string> ObtenerConfiguracion()
-        {
-            return configuration["ConnectionStrings:defaultConnection"];
-        } 
+        //[HttpGet("Configuraciones")]
+        //public ActionResult<string> ObtenerConfiguracion()
+        //{
+        //    return configuration["ConnectionStrings:defaultConnection"];
+        //} 
 
-        [HttpGet]
+        [HttpGet(Name = "obtenerAutores")]
+        [AllowAnonymous]
         //[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult<List<AutorDTO>>> Get()
         {
@@ -56,7 +57,7 @@ namespace WebApiAutores.Controllers
             
         }
 
-        [HttpGet("{nombre}")]
+        [HttpGet("{nombre}", Name = "ObtenerAutoresPorNombre")]
         public async Task<ActionResult<List<AutorDTO>>> Get([FromRoute] string nombre)
         {
             /*Aqui me dara una lista si hay varios autores con el mismo nombre*/
@@ -68,7 +69,7 @@ namespace WebApiAutores.Controllers
         }
 
 
-        [HttpPost]
+        [HttpPost(Name = "crearAutor")]
         public async Task<ActionResult> Post(AutorCreacionDTO autorCreacionDTO)
         {
             var existeAutorConMiNombre = await context.Autores.AnyAsync(x => x.Nombre == autorCreacionDTO.Nombre);
@@ -88,7 +89,7 @@ namespace WebApiAutores.Controllers
             return CreatedAtRoute("obtenerAutor", new {id = autor.Id}, autorDTO);
         }
 
-        [HttpPut("{id:int}")] // api/autores/1
+        [HttpPut("{id:int}", Name = "actualizarAutor")] // api/autores/1
         public async Task<ActionResult> Put(AutorCreacionDTO autorCreacionDTO, int id)
         {
             
@@ -108,7 +109,7 @@ namespace WebApiAutores.Controllers
 
         }
 
-        [HttpDelete("{id:int}")] //api/autores/1
+        [HttpDelete("{id:int}", Name = "borrarAutor")] //api/autores/1
 
         public async Task<ActionResult> Delete(int id)
         {

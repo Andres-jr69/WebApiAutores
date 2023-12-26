@@ -22,7 +22,7 @@ namespace WebApiAutores.Controllers
             this.mapper = mapper;
         }
         /*Yo voy a obtener un http Get, por que con este get va a ser de un libro en especifico*/
-        [HttpGet("{id:int}", Name = "obtenerLibros")]
+        [HttpGet("{id:int}", Name = "obtenerLibro")]
         public async Task<ActionResult<LibrosDTOConAutores >> Get(int id)
         {
             /*Puede acceder a Libros por que lo agrego en ApplicationDbContext*/
@@ -42,7 +42,7 @@ namespace WebApiAutores.Controllers
             return mapper.Map<LibrosDTOConAutores>(libro);
         }
         //Metodo para crear un libro
-        [HttpPost]
+        [HttpPost(Name = "crearLibro")]
         public async Task<ActionResult> Post(LibroCreacionDTO libroCreacionDTO)
         {
             if (libroCreacionDTO.AutoresIds == null)
@@ -70,12 +70,12 @@ namespace WebApiAutores.Controllers
 
             var libroDTO = mapper.Map<LibroDTO>(libro);
 
-            return CreatedAtRoute("obtenerLibros", new {id = libro.Id}, libroDTO);
+            return CreatedAtRoute("obtenerLibro", new {id = libro.Id}, libroDTO);
 
 
         }
 
-        [HttpPut("{id:int}")]
+        [HttpPut("{id:int}", Name = "actualizarLibros")]
         public async Task<ActionResult> Put(int id, LibroCreacionDTO libroCreacionDTO)
         {
             var libroDB = await context.Libros
@@ -107,7 +107,7 @@ namespace WebApiAutores.Controllers
             }
         }
 
-        [HttpPatch("{id:int}")]
+        [HttpPatch("{id:int}", Name = "patchLibro")]
         public async Task<ActionResult> Patch(int id, JsonPatchDocument<LibroPatchDTO> patchDocument)
         {
             if (patchDocument is null)
@@ -140,7 +140,7 @@ namespace WebApiAutores.Controllers
             return NoContent();
         }
 
-        [HttpDelete("{id:int}")] //api/autores/1
+        [HttpDelete("{id:int}", Name = "borrarLibro")] //api/autores/1
         public async Task<ActionResult> Delete(int id)
         {
             var existe = await context.Libros.AnyAsync(x => x.Id == id);
