@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -8,6 +9,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using WebApiAutores;
 using WebApiAutores.Servicio;
+using WebApiAutores.Utilidades;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +21,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "WebAPIAutores", Version = "v1" });
-
+    c.SwaggerDoc("v2", new OpenApiInfo { Title = "WebAPIAutores", Version = "v2" });
+    c.OperationFilter<AgregarParametroXVersion>();
+    c.OperationFilter<AgregarParametroHATEOAS>();
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -51,6 +55,10 @@ builder.Services.AddSwaggerGen(c =>
 //    opciones.Filters.Add(typeof(FiltroDeExcepcion));
 //}).AddJsonOptions(x =>
 //    x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles).AddNewtonsoftJson();
+builder.Services.AddControllers(opciones =>
+{
+    opciones.Conventions.Add(new SwaggerAgrupaPorVersion());
+});
 
 var connectionString = builder.Configuration.GetConnectionString("defaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
@@ -83,7 +91,8 @@ builder.Services.AddCors(opciones =>
 {
     opciones.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("http://apirequest.io").AllowAnyMethod().AllowAnyHeader();
+        builder.WithOrigins("http://apirequest.io").AllowAnyMethod().AllowAnyHeader()
+        .WithExposedHeaders(new string[] { "cantidadTotalRegistro" });
         
     });
 });
@@ -91,13 +100,22 @@ builder.Services.AddCors(opciones =>
 builder.Services.AddDataProtection();
 builder.Services.AddTransient<HashService>();
 
+builder.Services.AddTransient<GeneradorEnlaces>();
+builder.Services.AddTransient<HATEOASAutorFilterAttribute>();
+builder.Services.AddSingleton<IActionContextAccessor, ActionContextAccessor>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "webApiAutores v1");
+
+        c.SwaggerEndpoint("/swagger/v2/swagger.json", "webApiAutores v2");
+    });
 }
 app.UseCors();
 
